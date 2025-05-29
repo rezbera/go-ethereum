@@ -55,14 +55,24 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 // CalcBaseFee calculates the basefee of the header.
 func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 	// If the current block is the first EIP-1559 block, return the InitialBaseFee.
+	// On Berachain mainnet, we have already passed the first EIP-1559 block and as such this will never be triggered.
+	// However, for new networks, the first block will have the InitialBaseFee as the baseFee.
 	if !config.IsLondon(parent.Number) {
 		return new(big.Int).SetUint64(params.InitialBaseFee)
 	}
 
+	// protocol minimum base fee = 10 gwei
+	minBaseFee := new(big.Int).SetUint64(params.MinimumBaseFee)
+
 	parentGasTarget := parent.GasLimit / config.ElasticityMultiplier()
 	// If the parent gasUsed is the same as the target, the baseFee remains unchanged.
 	if parent.GasUsed == parentGasTarget {
-		return new(big.Int).Set(parent.BaseFee)
+		// CHANGE(berachain): Enforce the minimum base fee
+		baseFee := new(big.Int).Set(parent.BaseFee)
+		if baseFee.Cmp(minBaseFee) < 0 {
+			return minBaseFee
+		}
+		return baseFee
 	}
 
 	var (
@@ -77,10 +87,15 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		num.Mul(num, parent.BaseFee)
 		num.Div(num, denom.SetUint64(parentGasTarget))
 		num.Div(num, denom.SetUint64(config.BaseFeeChangeDenominator()))
+		// CHANGE(berachain): Enforce the minimum base fee
 		if num.Cmp(common.Big1) < 0 {
-			return num.Add(parent.BaseFee, common.Big1)
+			num.Set(common.Big1)
 		}
-		return num.Add(parent.BaseFee, num)
+		newFee := new(big.Int).Add(parent.BaseFee, num)
+		if newFee.Cmp(minBaseFee) < 0 {
+			return minBaseFee
+		}
+		return newFee
 	} else {
 		// Otherwise if the parent block used less gas than its target, the baseFee should decrease.
 		// max(0, parentBaseFee * gasUsedDelta / parentGasTarget / baseFeeChangeDenominator)
@@ -88,10 +103,10 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		num.Mul(num, parent.BaseFee)
 		num.Div(num, denom.SetUint64(parentGasTarget))
 		num.Div(num, denom.SetUint64(config.BaseFeeChangeDenominator()))
-
-		baseFee := num.Sub(parent.BaseFee, num)
-		if baseFee.Cmp(common.Big0) < 0 {
-			baseFee = common.Big0
+		// CHANGE(berachain): Enforce the minimum base fee
+		baseFee := new(big.Int).Sub(parent.BaseFee, num)
+		if baseFee.Cmp(minBaseFee) < 0 {
+			return minBaseFee
 		}
 		return baseFee
 	}

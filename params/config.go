@@ -911,9 +911,10 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, headNumber *big.Int, 
 }
 
 // BaseFeeChangeDenominator bounds the amount the base fee can change between blocks.
-func (c *ChainConfig) BaseFeeChangeDenominator(time uint64) uint64 {
-	if c.IsPrague1(time) {
-		return BerachainBaseFeeChangeDenominator
+// TODO: needs to be fork aware for prague1
+func (c *ChainConfig) BaseFeeChangeDenominator() uint64 {
+	if c.Berachain != nil {
+		return c.Berachain.BaseFeeChangeDenominator
 	}
 	return DefaultBaseFeeChangeDenominator
 }

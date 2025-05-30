@@ -260,6 +260,7 @@ func (e *GenesisMismatchError) Error() string {
 type ChainOverrides struct {
 	OverridePrague *uint64
 	OverrideVerkle *uint64
+	// TODO(berachain): Is it necessary to add OverridePrague1?
 }
 
 // apply applies the chain overrides on the supplied chain config.

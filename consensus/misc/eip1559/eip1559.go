@@ -61,9 +61,6 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		return new(big.Int).SetUint64(params.InitialBaseFee)
 	}
 
-	// protocol minimum base fee = 10 gwei
-	minBaseFee := new(big.Int).SetUint64(params.MinimumBaseFee)
-
 	parentGasTarget := parent.GasLimit / config.ElasticityMultiplier()
 	// If the parent gasUsed is the same as the target, the baseFee remains unchanged.
 	if parent.GasUsed == parentGasTarget {
@@ -107,4 +104,14 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		}
 		return baseFee
 	}
+}
+
+func enforceMinBaseFee(config *params.ChainConfig, currentBaseFee *big.Int) *big.Int {
+	if config.Berachain != nil {
+		minBaseFee := new(big.Int).SetUint64(config.Berachain.MinimumBaseFee)
+		if currentBaseFee.Cmp(minBaseFee) < 0 {
+			return minBaseFee
+		}
+	}
+	return currentBaseFee
 }

@@ -408,6 +408,7 @@ type ChainConfig struct {
 	ShanghaiTime *uint64 `json:"shanghaiTime,omitempty"` // Shanghai switch time (nil = no fork, 0 = already on shanghai)
 	CancunTime   *uint64 `json:"cancunTime,omitempty"`   // Cancun switch time (nil = no fork, 0 = already on cancun)
 	PragueTime   *uint64 `json:"pragueTime,omitempty"`   // Prague switch time (nil = no fork, 0 = already on prague)
+	Prague1Time  *uint64 `json:"prague1Time,omitempty"`  // Prague switch time (nil = no fork, 0 = already on prague)
 	OsakaTime    *uint64 `json:"osakaTime,omitempty"`    // Osaka switch time (nil = no fork, 0 = already on osaka)
 	VerkleTime   *uint64 `json:"verkleTime,omitempty"`   // Verkle switch time (nil = no fork, 0 = already on verkle)
 
@@ -434,6 +435,9 @@ type ChainConfig struct {
 	Ethash             *EthashConfig       `json:"ethash,omitempty"`
 	Clique             *CliqueConfig       `json:"clique,omitempty"`
 	BlobScheduleConfig *BlobScheduleConfig `json:"blobSchedule,omitempty"`
+
+	// Berachain config, nil if not active
+	Berachain *BerachainConfig `json:"berachain,omitempty"`
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -448,6 +452,18 @@ func (c EthashConfig) String() string {
 type CliqueConfig struct {
 	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
 	Epoch  uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
+}
+
+// BerachainConfig is the berachain config.
+type BerachainConfig struct {
+	// MinimumBaseFee is the minimum base fee in wei
+	MinimumBaseFee           uint64 `json:"eip1559MinimumBaseFee"`
+	BaseFeeChangeDenominator uint64 `json:"eip1559BaseFeeChangeDenominator"`
+}
+
+// String implements the stringer interface.
+func (o *BerachainConfig) String() string {
+	return "berachain"
 }
 
 // String implements the stringer interface, returning the consensus engine details.
@@ -523,6 +539,9 @@ func (c *ChainConfig) Description() string {
 	}
 	if c.PragueTime != nil {
 		banner += fmt.Sprintf(" - Prague:                      @%-10v\n", *c.PragueTime)
+	}
+	if c.Prague1Time != nil {
+		banner += fmt.Sprintf(" - Prague1:                     @%-10v\n", *c.Prague1Time)
 	}
 	if c.OsakaTime != nil {
 		banner += fmt.Sprintf(" - Osaka:                      @%-10v\n", *c.OsakaTime)
@@ -643,6 +662,13 @@ func (c *ChainConfig) IsPrague(num *big.Int, time uint64) bool {
 	return c.IsLondon(num) && isTimestampForked(c.PragueTime, time)
 }
 
+// IsPrague1 returns whether time is either equal to the Prague1 fork time or greater.
+// On Berachain supported networks, London hard-fork must always be enabled from genesis.
+// As such, there is no need to explicitly check for IsLondon.
+func (c *ChainConfig) IsPrague1(time uint64) bool {
+	return isTimestampForked(c.Prague1Time, time)
+}
+
 // IsOsaka returns whether time is either equal to the Osaka fork time or greater.
 func (c *ChainConfig) IsOsaka(num *big.Int, time uint64) bool {
 	return c.IsLondon(num) && isTimestampForked(c.OsakaTime, time)
@@ -726,6 +752,7 @@ func (c *ChainConfig) CheckConfigForkOrder() error {
 		{name: "shanghaiTime", timestamp: c.ShanghaiTime},
 		{name: "cancunTime", timestamp: c.CancunTime, optional: true},
 		{name: "pragueTime", timestamp: c.PragueTime, optional: true},
+		{name: "prague1Time", timestamp: c.Prague1Time, optional: true},
 		{name: "osakaTime", timestamp: c.OsakaTime, optional: true},
 		{name: "verkleTime", timestamp: c.VerkleTime, optional: true},
 	} {
@@ -871,6 +898,9 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, headNumber *big.Int, 
 	if isForkTimestampIncompatible(c.PragueTime, newcfg.PragueTime, headTimestamp) {
 		return newTimestampCompatError("Prague fork timestamp", c.PragueTime, newcfg.PragueTime)
 	}
+	if isForkTimestampIncompatible(c.Prague1Time, newcfg.Prague1Time, headTimestamp) {
+		return newTimestampCompatError("Prague1 fork timestamp", c.Prague1Time, newcfg.Prague1Time)
+	}
 	if isForkTimestampIncompatible(c.OsakaTime, newcfg.OsakaTime, headTimestamp) {
 		return newTimestampCompatError("Osaka fork timestamp", c.OsakaTime, newcfg.OsakaTime)
 	}
@@ -881,8 +911,11 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, headNumber *big.Int, 
 }
 
 // BaseFeeChangeDenominator bounds the amount the base fee can change between blocks.
-func (c *ChainConfig) BaseFeeChangeDenominator() uint64 {
-	return BerachainBaseFeeChangeDenominator
+func (c *ChainConfig) BaseFeeChangeDenominator(time uint64) uint64 {
+	if c.IsPrague1(time) {
+		return BerachainBaseFeeChangeDenominator
+	}
+	return DefaultBaseFeeChangeDenominator
 }
 
 // ElasticityMultiplier bounds the maximum gas limit an EIP-1559 block may have.

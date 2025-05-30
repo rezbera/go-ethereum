@@ -130,14 +130,12 @@ const (
 
 	DefaultBaseFeeChangeDenominator = 8 // Bounds the amount the base fee can change between blocks.
 
-	// BerachainBaseFeeChangeDenominator CHANGE(berachain): Modified denominator due to the Berachain fast block time
-	BerachainBaseFeeChangeDenominator = 48
+	BerachainBaseFeeChangeDenominator = 48 // BerachainBaseFeeChangeDenominator Modified denominator due to the Berachain fast block time
 
 	DefaultElasticityMultiplier = 2          // Bounds the maximum gas limit an EIP-1559 block may have.
 	InitialBaseFee              = 1000000000 // Initial base fee for EIP-1559 blocks.
 
-	// MinimumBaseFee CHANGE(berachain): Berachain introduces a minimum base fee.
-	MinimumBaseFee = 10_000_000_000
+	MinimumBaseFee = 10_000_000_000 // MinimumBaseFee Berachain introduces a minimum base fee.
 
 	MaxCodeSize     = 24576           // Maximum bytecode to permit for a contract
 	MaxInitCodeSize = 2 * MaxCodeSize // Maximum initcode to permit in a creation transaction and create instructions

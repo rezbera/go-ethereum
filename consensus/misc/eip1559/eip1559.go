@@ -67,7 +67,6 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 	parentGasTarget := parent.GasLimit / config.ElasticityMultiplier()
 	// If the parent gasUsed is the same as the target, the baseFee remains unchanged.
 	if parent.GasUsed == parentGasTarget {
-		// CHANGE(berachain): Enforce the minimum base fee
 		baseFee := new(big.Int).Set(parent.BaseFee)
 		if baseFee.Cmp(minBaseFee) < 0 {
 			return minBaseFee
@@ -87,7 +86,6 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		num.Mul(num, parent.BaseFee)
 		num.Div(num, denom.SetUint64(parentGasTarget))
 		num.Div(num, denom.SetUint64(config.BaseFeeChangeDenominator()))
-		// CHANGE(berachain): Enforce the minimum base fee
 		if num.Cmp(common.Big1) < 0 {
 			num.Set(common.Big1)
 		}
@@ -103,7 +101,6 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		num.Mul(num, parent.BaseFee)
 		num.Div(num, denom.SetUint64(parentGasTarget))
 		num.Div(num, denom.SetUint64(config.BaseFeeChangeDenominator()))
-		// CHANGE(berachain): Enforce the minimum base fee
 		baseFee := new(big.Int).Sub(parent.BaseFee, num)
 		if baseFee.Cmp(minBaseFee) < 0 {
 			return minBaseFee

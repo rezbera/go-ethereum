@@ -408,7 +408,6 @@ type ChainConfig struct {
 	ShanghaiTime *uint64 `json:"shanghaiTime,omitempty"` // Shanghai switch time (nil = no fork, 0 = already on shanghai)
 	CancunTime   *uint64 `json:"cancunTime,omitempty"`   // Cancun switch time (nil = no fork, 0 = already on cancun)
 	PragueTime   *uint64 `json:"pragueTime,omitempty"`   // Prague switch time (nil = no fork, 0 = already on prague)
-	Prague1Time  *uint64 `json:"prague1Time,omitempty"`  // Prague switch time (nil = no fork, 0 = already on prague)
 	OsakaTime    *uint64 `json:"osakaTime,omitempty"`    // Osaka switch time (nil = no fork, 0 = already on osaka)
 	VerkleTime   *uint64 `json:"verkleTime,omitempty"`   // Verkle switch time (nil = no fork, 0 = already on verkle)
 
@@ -540,9 +539,6 @@ func (c *ChainConfig) Description() string {
 	if c.PragueTime != nil {
 		banner += fmt.Sprintf(" - Prague:                      @%-10v\n", *c.PragueTime)
 	}
-	if c.Prague1Time != nil {
-		banner += fmt.Sprintf(" - Prague1:                     @%-10v\n", *c.Prague1Time)
-	}
 	if c.OsakaTime != nil {
 		banner += fmt.Sprintf(" - Osaka:                      @%-10v\n", *c.OsakaTime)
 	}
@@ -662,13 +658,6 @@ func (c *ChainConfig) IsPrague(num *big.Int, time uint64) bool {
 	return c.IsLondon(num) && isTimestampForked(c.PragueTime, time)
 }
 
-// IsPrague1 returns whether time is either equal to the Prague1 fork time or greater.
-// On Berachain supported networks, London hard-fork must always be enabled from genesis.
-// As such, there is no need to explicitly check for IsLondon.
-func (c *ChainConfig) IsPrague1(time uint64) bool {
-	return isTimestampForked(c.Prague1Time, time)
-}
-
 // IsOsaka returns whether time is either equal to the Osaka fork time or greater.
 func (c *ChainConfig) IsOsaka(num *big.Int, time uint64) bool {
 	return c.IsLondon(num) && isTimestampForked(c.OsakaTime, time)
@@ -752,7 +741,6 @@ func (c *ChainConfig) CheckConfigForkOrder() error {
 		{name: "shanghaiTime", timestamp: c.ShanghaiTime},
 		{name: "cancunTime", timestamp: c.CancunTime, optional: true},
 		{name: "pragueTime", timestamp: c.PragueTime, optional: true},
-		{name: "prague1Time", timestamp: c.Prague1Time, optional: true},
 		{name: "osakaTime", timestamp: c.OsakaTime, optional: true},
 		{name: "verkleTime", timestamp: c.VerkleTime, optional: true},
 	} {
@@ -898,9 +886,6 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, headNumber *big.Int, 
 	if isForkTimestampIncompatible(c.PragueTime, newcfg.PragueTime, headTimestamp) {
 		return newTimestampCompatError("Prague fork timestamp", c.PragueTime, newcfg.PragueTime)
 	}
-	if isForkTimestampIncompatible(c.Prague1Time, newcfg.Prague1Time, headTimestamp) {
-		return newTimestampCompatError("Prague1 fork timestamp", c.Prague1Time, newcfg.Prague1Time)
-	}
 	if isForkTimestampIncompatible(c.OsakaTime, newcfg.OsakaTime, headTimestamp) {
 		return newTimestampCompatError("Osaka fork timestamp", c.OsakaTime, newcfg.OsakaTime)
 	}
@@ -911,7 +896,7 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, headNumber *big.Int, 
 }
 
 // BaseFeeChangeDenominator bounds the amount the base fee can change between blocks.
-// TODO: needs to be fork aware for prague1
+// TODO: needs to be fork aware
 func (c *ChainConfig) BaseFeeChangeDenominator() uint64 {
 	if c.Berachain != nil {
 		return c.Berachain.BaseFeeChangeDenominator

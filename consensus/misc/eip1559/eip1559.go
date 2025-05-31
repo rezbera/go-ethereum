@@ -53,6 +53,7 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 }
 
 // CalcBaseFee calculates the basefee of the header.
+// TODO: Make this fork aware
 func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 	calculatedBaseFee := calcBaseFee(config, parent)
 	if config.Berachain != nil {

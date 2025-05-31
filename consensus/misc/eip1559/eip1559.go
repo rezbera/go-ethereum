@@ -54,15 +54,27 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 
 // CalcBaseFee calculates the basefee of the header.
 func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
+	calculatedBaseFee := calcBaseFee(config, parent)
+	if config.Berachain != nil {
+		minBaseFee := new(big.Int).SetUint64(config.Berachain.MinimumBaseFee)
+		if calculatedBaseFee.Cmp(minBaseFee) < 0 {
+			return minBaseFee
+		}
+	}
+	return calculatedBaseFee
+}
+
+// calcBaseFee calculates the basefee of the header.
+func calcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 	// If the current block is the first EIP-1559 block, return the InitialBaseFee.
 	if !config.IsLondon(parent.Number) {
-		return enforceMinBaseFee(config, new(big.Int).SetUint64(params.InitialBaseFee))
+		return new(big.Int).SetUint64(params.InitialBaseFee)
 	}
 
 	parentGasTarget := parent.GasLimit / config.ElasticityMultiplier()
 	// If the parent gasUsed is the same as the target, the baseFee remains unchanged.
 	if parent.GasUsed == parentGasTarget {
-		return enforceMinBaseFee(config, new(big.Int).Set(parent.BaseFee))
+		return new(big.Int).Set(parent.BaseFee)
 	}
 
 	var (
@@ -78,9 +90,9 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		num.Div(num, denom.SetUint64(parentGasTarget))
 		num.Div(num, denom.SetUint64(config.BaseFeeChangeDenominator()))
 		if num.Cmp(common.Big1) < 0 {
-			return enforceMinBaseFee(config, num.Add(parent.BaseFee, common.Big1))
+			return num.Add(parent.BaseFee, common.Big1)
 		}
-		return enforceMinBaseFee(config, num.Add(parent.BaseFee, num))
+		return num.Add(parent.BaseFee, num)
 	} else {
 		// Otherwise if the parent block used less gas than its target, the baseFee should decrease.
 		// max(0, parentBaseFee * gasUsedDelta / parentGasTarget / baseFeeChangeDenominator)
@@ -93,17 +105,6 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		if baseFee.Cmp(common.Big0) < 0 {
 			baseFee = common.Big0
 		}
-		return enforceMinBaseFee(config, baseFee)
+		return baseFee
 	}
-}
-
-// enforceMinBaseFee TODO: make this fork aware.
-func enforceMinBaseFee(config *params.ChainConfig, currentBaseFee *big.Int) *big.Int {
-	if config.Berachain != nil {
-		minBaseFee := new(big.Int).SetUint64(config.Berachain.MinimumBaseFee)
-		if currentBaseFee.Cmp(minBaseFee) < 0 {
-			return minBaseFee
-		}
-	}
-	return currentBaseFee
 }

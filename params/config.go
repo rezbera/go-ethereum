@@ -899,8 +899,10 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, headNumber *big.Int, 
 // TODO: needs to be fork aware
 func (c *ChainConfig) BaseFeeChangeDenominator() uint64 {
 	if c.Berachain != nil {
+		fmt.Println("Using Berachain BaseFeeChangeDenominator")
 		return c.Berachain.BaseFeeChangeDenominator
 	}
+	fmt.Println("Using Default BaseFeeChangeDenominator")
 	return DefaultBaseFeeChangeDenominator
 }
 

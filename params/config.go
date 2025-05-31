@@ -434,6 +434,9 @@ type ChainConfig struct {
 	Ethash             *EthashConfig       `json:"ethash,omitempty"`
 	Clique             *CliqueConfig       `json:"clique,omitempty"`
 	BlobScheduleConfig *BlobScheduleConfig `json:"blobSchedule,omitempty"`
+
+	// Berachain config, nil if not active
+	Berachain *BerachainConfig `json:"berachain,omitempty"`
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -448,6 +451,18 @@ func (c EthashConfig) String() string {
 type CliqueConfig struct {
 	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
 	Epoch  uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
+}
+
+// BerachainConfig is the berachain config.
+type BerachainConfig struct {
+	// MinimumBaseFee is the minimum base fee in wei
+	MinimumBaseFee           uint64 `json:"eip1559MinimumBaseFee"`
+	BaseFeeChangeDenominator uint64 `json:"eip1559BaseFeeChangeDenominator"`
+}
+
+// String implements the stringer interface.
+func (o *BerachainConfig) String() string {
+	return "berachain"
 }
 
 // String implements the stringer interface, returning the consensus engine details.
@@ -881,7 +896,11 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, headNumber *big.Int, 
 }
 
 // BaseFeeChangeDenominator bounds the amount the base fee can change between blocks.
+// TODO: needs to be fork aware
 func (c *ChainConfig) BaseFeeChangeDenominator() uint64 {
+	if c.Berachain != nil {
+		return c.Berachain.BaseFeeChangeDenominator
+	}
 	return DefaultBaseFeeChangeDenominator
 }
 

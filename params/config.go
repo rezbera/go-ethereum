@@ -563,6 +563,11 @@ type BlobScheduleConfig struct {
 	Verkle *BlobConfig `json:"verkle,omitempty"`
 }
 
+// IsBerachain returns whether the node is a berachain node or not.
+func (c *ChainConfig) IsBerachain() bool {
+	return c.Berachain != nil
+}
+
 // IsHomestead returns whether num is either equal to the homestead block or greater.
 func (c *ChainConfig) IsHomestead(num *big.Int) bool {
 	return isBlockForked(c.HomesteadBlock, num)

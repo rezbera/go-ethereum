@@ -56,7 +56,7 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 // TODO: Make this fork aware
 func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 	calculatedBaseFee := calcBaseFee(config, parent)
-	if config.Berachain != nil {
+	if config.IsBerachain() {
 		minBaseFee := new(big.Int).SetUint64(config.Berachain.MinimumBaseFee)
 		if calculatedBaseFee.Cmp(minBaseFee) < 0 {
 			return minBaseFee
